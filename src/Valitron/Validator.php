@@ -798,6 +798,77 @@ class Validator
         return $vtime > $ptime;
     }
 
+	/**
+	 * Validate the age of a given date is between min and max values
+	 *
+	 * @param   string  $field
+	 * @param   mixed   $value
+	 * @param   array   $params
+	 *
+	 * @return bool
+	 */
+	protected function validateAge($field, $value, $params)
+	{
+		// First, we need to convert the value to Y-m-d format as expected by PHP
+		$config     = \EventbookingHelper::getConfig();
+		$dateFormat = $config->date_field_format ?: '%Y-%m-%d';
+		$dateFormat = str_replace('%', '', $dateFormat);
+
+		if ($value)
+		{
+			try
+			{
+				$date = \DateTime::createFromFormat($dateFormat, $value);
+
+				if ($date)
+				{
+					$value = $date->format('Y-m-d');
+				}
+			}
+			catch (\Exception $e)
+			{
+
+			}
+		}
+
+		// Get max and min age from parameters
+		$minAge = isset($params[0]) ? (int) $params[0] : 0;
+		$maxAge = isset($params[1]) ? (int) $params[1] : 0;
+
+		// First, this need to be a valid date
+		if (!$this->validateDate($field, $value))
+		{
+			return false;
+		}
+
+		$date = new \DateTime($value);
+
+		if ($maxAge > 0)
+		{
+			$minDate = new \DateTime(sprintf('-%d years', $maxAge));
+			$minDate->setTime(0, 0, 0);
+
+			if ($date < $minDate)
+			{
+				return false;
+			}
+		}
+
+
+		if ($minAge > 0)
+		{
+			$maxDate = new \DateTime(sprintf('-%d years', $minAge));
+			$maxDate->setTime(23, 59, 59);
+
+			if ($date > $maxDate)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
     /**
      * Validate that a field contains a boolean.
      *
