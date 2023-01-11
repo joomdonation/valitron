@@ -190,7 +190,7 @@ class Validator
     protected function validateEquals($field, $value, array $params)
     {
         // extract the second field value, this accounts for nested array values
-        list($field2Value, $multiple) = $this->getPart($this->_fields, explode('.', $params[0]));
+        [$field2Value, $multiple] = $this->getPart($this->_fields, explode('.', $params[0]));
         return isset($field2Value) && $value == $field2Value;
     }
 
@@ -205,7 +205,7 @@ class Validator
     protected function validateDifferent($field, $value, array $params)
     {
         // extract the second field value, this accounts for nested array values
-        list($field2Value, $multiple) = $this->getPart($this->_fields, explode('.', $params[0]));
+        [$field2Value, $multiple] = $this->getPart($this->_fields, explode('.', $params[0]));
         return isset($field2Value) && $value != $field2Value;
     }
 
@@ -405,7 +405,7 @@ class Validator
             return false;
         }
 
-        list($min, $max) = $params[0];
+        [$min, $max] = $params[0];
 
         return $this->validateMin($field, $value, array($min)) && $this->validateMax($field, $value, array($max));
     }
@@ -426,7 +426,7 @@ class Validator
         }
 
         if ($forceAsAssociative || $this->isAssociativeArray($params[0])) {
-           $params[0] = array_keys($params[0]);
+            $params[0] = array_keys($params[0]);
         }
 
         $strict = false;
@@ -693,6 +693,21 @@ class Validator
     }
 
     /**
+     * Validate that a field contains Italian tax code
+     *
+     * @param   string  $field
+     * @param   mixed   $value
+     *
+     * @return bool
+     */
+    protected function validateCodiceFiscale($field, $value)
+    {
+        $validator = new \CodiceFiscale\Validator($value);
+
+        return $validator->isFormallyValid();
+    }
+
+    /**
      * Validate that a field contains only alphabetic characters
      *
      * @param  string $field
@@ -810,76 +825,76 @@ class Validator
         return $vtime > $ptime;
     }
 
-	/**
-	 * Validate the age of a given date is between min and max values
-	 *
-	 * @param   string  $field
-	 * @param   mixed   $value
-	 * @param   array   $params
-	 *
-	 * @return bool
-	 */
-	protected function validateAge($field, $value, $params)
-	{
-		// First, we need to convert the value to Y-m-d format as expected by PHP
-		$config     = \EventbookingHelper::getConfig();
-		$dateFormat = $config->date_field_format ?: '%Y-%m-%d';
-		$dateFormat = str_replace('%', '', $dateFormat);
+    /**
+     * Validate the age of a given date is between min and max values
+     *
+     * @param   string  $field
+     * @param   mixed   $value
+     * @param   array   $params
+     *
+     * @return bool
+     */
+    protected function validateAge($field, $value, $params)
+    {
+        // First, we need to convert the value to Y-m-d format as expected by PHP
+        $config     = \EventbookingHelper::getConfig();
+        $dateFormat = $config->date_field_format ?: '%Y-%m-%d';
+        $dateFormat = str_replace('%', '', $dateFormat);
 
-		if ($value)
-		{
-			try
-			{
-				$date = \DateTime::createFromFormat($dateFormat, $value);
+        if ($value)
+        {
+            try
+            {
+                $date = \DateTime::createFromFormat($dateFormat, $value);
 
-				if ($date)
-				{
-					$value = $date->format('Y-m-d');
-				}
-			}
-			catch (\Exception $e)
-			{
+                if ($date)
+                {
+                    $value = $date->format('Y-m-d');
+                }
+            }
+            catch (\Exception $e)
+            {
 
-			}
-		}
+            }
+        }
 
-		// Get max and min age from parameters
-		$minAge = isset($params[0]) ? (int) $params[0] : 0;
-		$maxAge = isset($params[1]) ? (int) $params[1] : 0;
+        // Get max and min age from parameters
+        $minAge = isset($params[0]) ? (int) $params[0] : 0;
+        $maxAge = isset($params[1]) ? (int) $params[1] : 0;
 
-		// First, this need to be a valid date
-		if (!$this->validateDate($field, $value))
-		{
-			return false;
-		}
+        // First, this need to be a valid date
+        if (!$this->validateDate($field, $value))
+        {
+            return false;
+        }
 
-		$date = new \DateTime($value);
+        $date = new \DateTime($value);
 
-		if ($maxAge > 0)
-		{
-			$minDate = new \DateTime(sprintf('-%d years', $maxAge));
-			$minDate->setTime(0, 0, 0);
+        if ($maxAge > 0)
+        {
+            $minDate = new \DateTime(sprintf('-%d years', $maxAge));
+            $minDate->setTime(0, 0, 0);
 
-			if ($date < $minDate)
-			{
-				return false;
-			}
-		}
+            if ($date < $minDate)
+            {
+                return false;
+            }
+        }
 
 
-		if ($minAge > 0)
-		{
-			$maxDate = new \DateTime(sprintf('-%d years', $minAge));
-			$maxDate->setTime(23, 59, 59);
+        if ($minAge > 0)
+        {
+            $maxDate = new \DateTime(sprintf('-%d years', $minAge));
+            $maxDate->setTime(23, 59, 59);
 
-			if ($date > $maxDate)
-			{
-				return false;
-			}
-		}
+            if ($date > $maxDate)
+            {
+                return false;
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
     /**
      * Validate that a field contains a boolean.
@@ -1042,7 +1057,7 @@ class Validator
             $emptyFields = 0;
             foreach ($reqParams as $requiredField) {
                 // check the field is set, not null, and not the empty string
-                list($requiredFieldValue, $multiple) = $this->getPart($fields, explode('.', $requiredField));
+                [$requiredFieldValue, $multiple] = $this->getPart($fields, explode('.', $requiredField));
                 if (isset($requiredFieldValue) && (!is_string($requiredFieldValue) || trim($requiredFieldValue) !== '')) {
                     if (!$allRequired) {
                         $conditionallyReq = true;
@@ -1086,7 +1101,7 @@ class Validator
             $filledFields = 0;
             foreach ($reqParams as $requiredField) {
                 // check the field is NOT set, null, or the empty string, in which case we are requiring this value be present
-                list($requiredFieldValue, $multiple) = $this->getPart($fields, explode('.', $requiredField));
+                [$requiredFieldValue, $multiple] = $this->getPart($fields, explode('.', $requiredField));
                 if (!isset($requiredFieldValue) || (is_string($requiredFieldValue) && trim($requiredFieldValue) === '')) {
                     if (!$allEmpty) {
                         $conditionallyReq = true;
@@ -1238,7 +1253,7 @@ class Validator
         if ($identifier === '*') {
             $values = array();
             foreach ($data as $row) {
-                list($value, $multiple) = $this->getPart($row, $identifiers, $allow_empty);
+                [$value, $multiple] = $this->getPart($row, $identifiers, $allow_empty);
                 if ($multiple) {
                     $values = array_merge($values, $value);
                 } else {
@@ -1297,7 +1312,7 @@ class Validator
         $set_to_break = false;
         foreach ($this->_validations as $v) {
             foreach ($v['fields'] as $field) {
-                list($values, $multiple) = $this->getPart($this->_fields, explode('.', $field), false);
+                [$values, $multiple] = $this->getPart($this->_fields, explode('.', $field), false);
 
                 if (! $this->validationMustBeExcecuted($v, $field, $values, $multiple)){
                     continue;
